@@ -92,21 +92,6 @@ else:
 	else:
 		print("Not a move or a pokemon, exiting...")
 		exit()
-if pokemon=="octet":
-	print("""Often found in global chat, this pokemon is almost always helping out fellow players.
-HP:  60  [====================>                                                                      ] 
-Atk: 30  [==========>                                                                                ] 
-Def: 50  [================>                                                                          ] 
-SpA: 270 [==========================================================================================>] 
-SpD: 70  [=======================>                                                                   ] 
-Spd: 120 [========================================>                                                  ]
-BST: 600 (Pseudo-ledgendary)
-Abilities: Speed Boost (Hidden), Mute Mic, Magic Bounce (aka no u)
-Catch rate: 0 (0%) Cute masterball.
-Base Happiness: Wouldn't you like to know
-Egg groups: N/A
-""")
-	exit()
 try:
 	r=requests.get("https://pokeapi.co/api/v2/pokemon/"+pokemon+"/")
 	r=r.json()
@@ -121,9 +106,16 @@ except:
 			psbl[p]=ld
 	if len(psbl)==0:
 			print("Not a valid pokemon name! Maybe you misspelled?")
+			exit()
 	else:
-		print("Not a valid pokemon name! Maybe you meant", str(min(psbl, key=psbl.get)).capitalize() + "?")
-	exit()
+		print("Not a valid pokemon name! Assuming you meant", str(min(psbl, key=psbl.get)).capitalize() + "...")
+		pokemon=str(min(psbl, key=psbl.get))
+		r=requests.get("https://pokeapi.co/api/v2/pokemon/"+pokemon+"/")
+		r=r.json()
+		pid=r['id']
+		spurl=str(r['species']['url'])
+		r2=requests.get(spurl)
+		r2=r2.json()
 types=[]
 for i in range(0,len(r['types'])):
 	types.append(str(r['types'][i]['type']['name']).capitalize())
