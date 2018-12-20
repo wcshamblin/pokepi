@@ -143,6 +143,7 @@ for i in r2['flavor_text_entries']:
 			flavor=i['flavor_text'].replace('\n'," ")
 		break
 egg_groups=[]
+gnum=(float(r2['gender_rate'])/8.0)*100.0
 for i in r2['egg_groups']:
 	egg_groups.append(i['name'].capitalize())
 catch_rate=int(r2["capture_rate"])
@@ -160,3 +161,4 @@ print("Abilities:", ", ".join(able))
 print("Catch rate: ",catch_rate, "("+str(round((catch_rate/765.0)*100, 1))+"%)")
 print("Base happiness: ", base_happiness, "("+str(int((base_happiness/255)*100))+"%)")
 print("Egg groups: ", ", ".join(egg_groups))
+print("Gender ratio: ", str(100.0-gnum)+"% Male, ", str(gnum)+"% female")
