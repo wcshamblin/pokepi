@@ -44,9 +44,10 @@ if len(sys.argv)==2:
 		print("""
 Usage: pokepi [OPTION] [INPUT]
 
---pokemon <pokemon name>        Print pokedex entry for a pokemon
+--pokemon <pokemon name>        Print pokedex entry for a pokemon. Make sure to use a - in places of spaces when using this with a name containing a space.
 --move <move name>              Print pokedex entry for a move. Make sure to use a - in places of spaces when using this with a name containing a space.
---item <item name>              Print pokedex entry for an item. Make sure to use - in places of spaces when using this with a name containing a space.""")
+--item <item name>              Print pokedex entry for an item. Make sure to use - in places of spaces when using this with a name containing a space.
+--berry <berry name> Print pokedex entry for an berry.""")
 		exit()
 if len(sys.argv)==3:
 	cmd_opt=True
@@ -63,24 +64,16 @@ if cmd_opt==True:
 		ri="item"
 	if str(sys.argv[1]).lower() == "--moves" or str(sys.argv[1]).lower() == "--move":
 		ri="move"
+	if str(sys.argv[1]).lower() == "--berry":
+		ri="berry"
+
 	elif str(sys.argv[1]).lower() == "--pokemon":
 		ri="pokemon"
 	else:
 		print("Incorrect command line arguments! Try the --help flag.")
 		exit()
 else:
-	ri=str(input("Move, pokemon, or item? --> ")).lower()
-
-
-
-
-
-
-
-
-
-
-
+	ri=str(input("Move, pokemon, item, or berry? --> ")).lower()
 if ri=="i" or ri=="item" or ri=="items":
 	if cmd_opt==True:
 		item=str(sys.argv[2]).lower()
@@ -128,26 +121,55 @@ if ri=="i" or ri=="item" or ri=="items":
 	else:
 		print("Not held by any wild pokemon")
 	exit()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+if ri=="b" or ri=="berry" or ri=="berrys" or ri=="berries":
+	if cmd_opt==True:
+		berry=str(sys.argv[2]).lower()
+	else:
+		berry=str(input("Berry --> ")).lower().replace(" ", "-")
+	if berry=="":
+		exit()
+	try:
+		b=requests.get("https://pokeapi.co/api/v2/berry/"+berry+"/")
+		b=b.json()
+	except:
+		for bi in berries:
+			ld=leven_dist(berry, bi)
+			if ld < 5:
+				psbl[bi]=ld
+		if len(psbl)==0:
+				print("Not a valid berry name! Maybe you misspelled?")
+				exit()
+		else:
+			print("Not a valid berry name! Assuming you meant", str(min(psbl, key=psbl.get)).replace("-", " ").capitalize() + "...")
+			berry=str(min(psbl, key=psbl.get))
+			b=requests.get("https://pokeapi.co/api/v2/berry/"+berry+"/")
+			b=b.json()
+	firmness=b['firmness']['name']
+	flavors={}
+	for f in b['flavors']:
+		flavors[str(f['flavor']['name'].capitalize())+":"]=f['potency']
+	growth=b['growth_time']
+	harvest=b['max_harvest']
+	size=b['size']
+	smooth=b['smoothness']
+	soil=b['soil_dryness']
+	print("Berry flavors:")
+	print("\n".join("{}\t{}".format(k, v) for k, v in flavors.items()),"\n")
+	print("Cycle time:", growth)
+	print("Growth cycle: Planted -> Sprouted -> Taller -> Flowering -> Berries. Total time: "+str(int(growth)*4)+"h")
+	print("Max harvest:", harvest, "berries")
+	print("Soil dryness:", soil, "\n")
+	print("Smoothness:", smooth)
+	print("Firmness:", firmness.replace("-", " ").capitalize())
+	print("Size:", str(size)+" millimeters ("+str(round(float(size)/25.4, 2)), "inches)")
+	exit()
 if ri=="m" or ri=="move" or ri=="moves":
 	if cmd_opt==True:
 		move=str(sys.argv[2]).lower()
 	else:
 		move=str(input("Move --> ")).lower().replace(" ", "-")
+	if move=="":
+		exit()
 	try:
 		m=requests.get("https://pokeapi.co/api/v2/move/"+move+"/")
 		m=m.json()
@@ -191,6 +213,8 @@ else:
 		pokemon=str(sys.argv[2]).lower()
 	else:
 		print("Not a move or a pokemon, exiting...")
+		exit()
+	if pokemon=="":
 		exit()
 	if pokemon=="random":
 		pokemon=random.choice(pokemons)
