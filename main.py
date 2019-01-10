@@ -3,19 +3,45 @@ import requests
 import sys
 import urllib.request
 import random
-def get_all(v):
-	r=requests.get("https://pokeapi.co/api/v2/"+v+"/")
+import queue
+import threading #fuck yea optimizing
+def get_one(q, v):
+	try:
+		r=requests.get("https://pokeapi.co/api/v2/"+v+"/")
+	except:
+		q.put("rip")
+		exit()
+	r=r.json()
+	q.put(r)
+def get_all(q, v):
+	try:
+		r=requests.get("https://pokeapi.co/api/v2/"+v+"/")
+	except:
+		q.put("rip")
+		exit()
 	r=r.json()
 	items=[]
 	for item in r['results']:
 		items.append(str(item['name']))
-	return(items)
-try:
-	pokemons=get_all("pokemon")
-	items=get_all("item")
-	berries=get_all("berry")
-	moves=get_all("move")
-except:
+	q.put(items)
+threads=[]
+things_l=["pokemon", "item", "berry", "move"]
+q=queue.Queue()
+for u in things_l:
+	t = threading.Thread(target=get_all, args=(q, u))
+	threads.append(t)
+	t.start()
+for i in range(0,4):
+	buf=q.get()
+	if "leppa" in buf:
+		berries=buf
+	if "master-ball" in buf:
+		items=buf
+	if "bulbasaur" in buf:
+		pokemons=buf
+	if "tackle" in buf:
+		moves=buf
+if berries=="rip" or items=="rip" or pokemons=="rip" or moves=="rip":
 	print("No route to pokeapi, check internet connection and try again.")
 	exit()
 psbl={}
@@ -42,59 +68,48 @@ def leven_dist(str1, str2):
 if len(sys.argv)==2:
 	if sys.argv[1] == "--help":
 		print("""
-Usage: pokepi [OPTION] [INPUT]
+Usage: pokepi [INPUT]
 
---pokemon <pokemon name>        Print pokedex entry for a pokemon. Make sure to use a - in places of spaces when using this with a name containing a space.
---move <move name>              Print pokedex entry for a move. Make sure to use a - in places of spaces when using this with a name containing a space.
---item <item name>              Print pokedex entry for an item. Make sure to use - in places of spaces when using this with a name containing a space.
---berry <berry name> Print pokedex entry for an berry.""")
+<name>        Print pokedex entry for an item, move, pokemon, or berry. Make sure to use a - in places of spaces when using this with a name containing a space.""")
 		exit()
-if len(sys.argv)==3:
+if len(sys.argv)==2:
 	cmd_opt=True
 else:
-	if len(sys.argv)==2:
-		print("Too little command line arguments! Use --help to display a help message. Exiting...")
-		exit()
-	elif len(sys.argv)>3:
-		print("Too many command line arguments! If you're trying to call a multi-word move, use a - instead of a space")
+	if len(sys.argv)>2:
+		print("Too many command line arguments! If you're trying to call a multi-word name, use a - instead of a space")
 		exit()
 	cmd_opt=False
 if cmd_opt==True:
-	if str(sys.argv[1]).lower() == "--items" or str(sys.argv[1]).lower() == "--item":
-		ri="item"
-	if str(sys.argv[1]).lower() == "--moves" or str(sys.argv[1]).lower() == "--move":
-		ri="move"
-	if str(sys.argv[1]).lower() == "--berry":
-		ri="berry"
-
-	elif str(sys.argv[1]).lower() == "--pokemon":
-		ri="pokemon"
-	else:
-		print("Incorrect command line arguments! Try the --help flag.")
-		exit()
+	inp=str(sys.argv[1]).lower()
 else:
-	ri=str(input("Move, pokemon, item, or berry? --> ")).lower()
-if ri=="i" or ri=="item" or ri=="items":
-	if cmd_opt==True:
-		item=str(sys.argv[2]).lower()
+	inp=str(input("--> ")).lower().replace(" ", "-")
+psbl={}
+if inp not in berries+items+pokemons+moves:
+	for ii in berries+items+pokemons+moves:
+		ld=leven_dist(inp, ii)
+		if ld < 8:
+			psbl[ii]=ld
+	if len(psbl)==0:
+			print("Not a valid name! Maybe you misspelled?")
+			exit()
 	else:
-		item=str(input("Item --> ")).lower().replace(" ", "-")
-	try:
-		i=requests.get("https://pokeapi.co/api/v2/item/"+item+"/")
-		i=i.json()
-	except:
-		for ii in items:
-			ld=leven_dist(item, ii)
-			if ld < 8:
-				psbl[ii]=ld
-		if len(psbl)==0:
-				print("Not a valid item name! Maybe you misspelled?")
-				exit()
-		else:
-			print("Not a valid item name! Assuming you meant", str(min(psbl, key=psbl.get)).replace("-", " ").capitalize() + "...")
-			item=str(min(psbl, key=psbl.get))
-			i=requests.get("https://pokeapi.co/api/v2/item/"+item+"/")
-			i=i.json()
+		inp=str(min(psbl, key=psbl.get))
+		print("Not a valid name, assuming you meant", inp.capitalize().replace("-", " "))
+if inp in berries:
+	ri="berry"
+if inp in items:
+	ri="item"
+if inp in pokemons:
+	ri="pokemon"
+if inp in moves:
+	ri="move"
+
+if ri=="item":
+	if cmd_opt==True:
+		item=str(sys.argv[1]).lower()
+	else:
+		item=inp
+	i=requests.get("https://pokeapi.co/api/v2/item/"+item+"/").json()
 	for e in i['effect_entries']:
 		if e['language']['name'] == "en":
 			if i['category']['name']=="all-machines":
@@ -107,7 +122,7 @@ if ri=="i" or ri=="item" or ri=="items":
 	if len(i['held_by_pokemon']) > 0:
 		for h in i['held_by_pokemon']:
 			held_by.append(h['pokemon']['name'].capitalize())
-	print(effect)
+	print(effect.replace("\n:", ":"))
 	if fling_power != None:
 		print("Fling power: ", fling_power)
 		if fling_effect != None:
@@ -123,27 +138,13 @@ if ri=="i" or ri=="item" or ri=="items":
 	exit()
 if ri=="b" or ri=="berry" or ri=="berrys" or ri=="berries":
 	if cmd_opt==True:
-		berry=str(sys.argv[2]).lower()
+		berry=str(sys.argv[1]).lower()
 	else:
-		berry=str(input("Berry --> ")).lower().replace(" ", "-")
+		berry=str(inp)
 	if berry=="":
 		exit()
-	try:
-		b=requests.get("https://pokeapi.co/api/v2/berry/"+berry+"/")
-		b=b.json()
-	except:
-		for bi in berries:
-			ld=leven_dist(berry, bi)
-			if ld < 5:
-				psbl[bi]=ld
-		if len(psbl)==0:
-				print("Not a valid berry name! Maybe you misspelled?")
-				exit()
-		else:
-			print("Not a valid berry name! Assuming you meant", str(min(psbl, key=psbl.get)).replace("-", " ").capitalize() + "...")
-			berry=str(min(psbl, key=psbl.get))
-			b=requests.get("https://pokeapi.co/api/v2/berry/"+berry+"/")
-			b=b.json()
+	b=requests.get("https://pokeapi.co/api/v2/berry/"+berry+"/").json()
+	effect=str(requests.get(b["item"]["url"]).json()["effect_entries"][0]["effect"].replace("\n:", ":"))
 	firmness=b['firmness']['name']
 	flavors={}
 	for f in b['flavors']:
@@ -153,6 +154,7 @@ if ri=="b" or ri=="berry" or ri=="berrys" or ri=="berries":
 	size=b['size']
 	smooth=b['smoothness']
 	soil=b['soil_dryness']
+	print("Effect:\n"+effect)
 	print("Berry flavors:")
 	print("\n".join("{}\t{}".format(k, v) for k, v in flavors.items()),"\n")
 	print("Cycle time:", growth)
@@ -165,27 +167,12 @@ if ri=="b" or ri=="berry" or ri=="berrys" or ri=="berries":
 	exit()
 if ri=="m" or ri=="move" or ri=="moves":
 	if cmd_opt==True:
-		move=str(sys.argv[2]).lower()
+		move=str(sys.argv[1]).lower()
 	else:
-		move=str(input("Move --> ")).lower().replace(" ", "-")
+		move=str(inp)
 	if move=="":
 		exit()
-	try:
-		m=requests.get("https://pokeapi.co/api/v2/move/"+move+"/")
-		m=m.json()
-	except:
-		for mi in moves:
-			ld=leven_dist(move, mi)
-			if ld < 8:
-				psbl[mi]=ld
-		if len(psbl)==0:
-				print("Not a valid move name! Maybe you misspelled?")
-				exit()
-		else:
-			print("Not a valid move name! Assuming you meant", str(min(psbl, key=psbl.get)).replace("-", " ").capitalize() + "...")
-			move=str(min(psbl, key=psbl.get))
-			m=requests.get("https://pokeapi.co/api/v2/move/"+move+"/")
-			m=m.json()
+	m=requests.get("https://pokeapi.co/api/v2/move/"+move+"/").json()
 	desc=str(m['effect_entries'][0]['effect']).replace("$effect_chance", str(m['effect_chance']))
 	category=str(m['damage_class']['name']).capitalize()
 	accuracy=str(m['accuracy']).capitalize()
@@ -207,41 +194,14 @@ if ri=="m" or ri=="move" or ri=="moves":
 		print("Priority:", priority)
 	exit()
 else:
-	if ri=="p" or ri=="poke" or ri=="pokemon" and cmd_opt==False:
-		pokemon=str(input("Pokemon --> ")).lower()
+	if ri=="pokemon" and cmd_opt==False:
+		pokemon=str(inp)
 	elif cmd_opt==True:
-		pokemon=str(sys.argv[2]).lower()
-	else:
-		print("Not a move or a pokemon, exiting...")
-		exit()
-	if pokemon=="":
-		exit()
-	if pokemon=="random":
-		pokemon=random.choice(pokemons)
-try:
-	r=requests.get("https://pokeapi.co/api/v2/pokemon/"+pokemon+"/")
-	r=r.json()
-	pid=r['id']
-	spurl=str(r['species']['url'])
-	r2=requests.get(spurl)
-	r2=r2.json()
-except:
-	for p in pokemons:
-		ld=leven_dist(pokemon,p)
-		if ld < 8:
-			psbl[p]=ld
-	if len(psbl)==0:
-			print("Not a valid pokemon name! Maybe you misspelled?")
-			exit()
-	else:
-		print("Not a valid pokemon name! Assuming you meant", str(min(psbl, key=psbl.get)).replace("-", " ").capitalize() + "...")
-		pokemon=str(min(psbl, key=psbl.get))
-		r=requests.get("https://pokeapi.co/api/v2/pokemon/"+pokemon+"/")
-		r=r.json()
-		pid=r['id']
-		spurl=str(r['species']['url'])
-		r2=requests.get(spurl)
-		r2=r2.json()
+		pokemon=str(sys.argv[1]).lower()
+r=requests.get("https://pokeapi.co/api/v2/pokemon/"+pokemon+"/").json()
+pid=r['id']
+spurl=str(r['species']['url'])
+r2=requests.get(spurl).json()
 types=[]
 for i in range(0,len(r['types'])):
 	types.append(str(r['types'][i]['type']['name']).capitalize())
