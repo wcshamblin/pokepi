@@ -64,7 +64,7 @@ def leven_dist(str1, str2):
                 d[i].insert(j, minimum)
     ldist = d[-1][-1]
     return ldist
-
+inp=""
 if len(sys.argv)==2:
 	if sys.argv[1] == "--help":
 		print("""
@@ -82,7 +82,8 @@ else:
 if cmd_opt==True:
 	inp=str(sys.argv[1]).lower()
 else:
-	inp=str(input("--> ")).lower().replace(" ", "-")
+	while inp=="":
+		inp=str(input("Pokedex --> ")).lower().replace(" ", "-")
 psbl={}
 if inp not in berries+items+pokemons+moves:
 	for ii in berries+items+pokemons+moves:
@@ -103,7 +104,9 @@ if inp in pokemons:
 	ri="pokemon"
 if inp in moves:
 	ri="move"
-
+if "-berry" in inp:
+	ri="berry"
+	inp=inp.replace("-berry", "")
 if ri=="item":
 	if cmd_opt==True:
 		item=str(sys.argv[1]).lower()
@@ -136,7 +139,7 @@ if ri=="item":
 	else:
 		print("Not held by any wild pokemon")
 	exit()
-if ri=="b" or ri=="berry" or ri=="berrys" or ri=="berries":
+if ri=="berry":
 	if cmd_opt==True:
 		berry=str(sys.argv[1]).lower()
 	else:
@@ -165,7 +168,7 @@ if ri=="b" or ri=="berry" or ri=="berrys" or ri=="berries":
 	print("Firmness:", firmness.replace("-", " ").capitalize())
 	print("Size:", str(size)+" millimeters ("+str(round(float(size)/25.4, 2)), "inches)")
 	exit()
-if ri=="m" or ri=="move" or ri=="moves":
+if ri=="moves":
 	if cmd_opt==True:
 		move=str(sys.argv[1]).lower()
 	else:
