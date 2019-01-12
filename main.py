@@ -33,6 +33,9 @@ for u in things_l:
 	t.start()
 for i in range(0,4):
 	buf=q.get()
+	if buf=="rip":
+		print("No route to pokeapi, check internet connection and try again.")
+		exit()
 	if "leppa" in buf:
 		berries=buf
 	if "master-ball" in buf:
@@ -41,9 +44,6 @@ for i in range(0,4):
 		pokemons=buf
 	if "tackle" in buf:
 		moves=buf
-if berries=="rip" or items=="rip" or pokemons=="rip" or moves=="rip":
-	print("No route to pokeapi, check internet connection and try again.")
-	exit()
 psbl={}
 def leven_dist(str1, str2):
     m = len(str1)
@@ -88,8 +88,13 @@ psbl={}
 if inp not in berries+items+pokemons+moves:
 	for ii in berries+items+pokemons+moves:
 		ld=leven_dist(inp, ii)
-		if ld < 8:
-			psbl[ii]=ld
+		if len(inp)<=5:
+			if ld < 5:
+				psbl[ii]=ld
+		else:
+			if ld < 5:
+				psbl[ii]=ld
+
 	if len(psbl)==0:
 			print("Not a valid name! Maybe you misspelled?")
 			exit()
@@ -108,10 +113,7 @@ if "-berry" in inp:
 	ri="berry"
 	inp=inp.replace("-berry", "")
 if ri=="item":
-	if cmd_opt==True:
-		item=str(sys.argv[1]).lower()
-	else:
-		item=inp
+	item=inp
 	i=requests.get("https://pokeapi.co/api/v2/item/"+item+"/").json()
 	for e in i['effect_entries']:
 		if e['language']['name'] == "en":
@@ -137,15 +139,10 @@ if ri=="item":
 	if len(held_by) > 0:
 		print("Held by: ", ', '.join(held_by))
 	else:
-		print("Not held by any wild pokemon")
+		print("Not held by any wild pokemon.")
 	exit()
 if ri=="berry":
-	if cmd_opt==True:
-		berry=str(sys.argv[1]).lower()
-	else:
-		berry=str(inp)
-	if berry=="":
-		exit()
+	berry=inp
 	b=requests.get("https://pokeapi.co/api/v2/berry/"+berry+"/").json()
 	effect=str(requests.get(b["item"]["url"]).json()["effect_entries"][0]["effect"].replace("\n:", ":"))
 	firmness=b['firmness']['name']
@@ -168,13 +165,8 @@ if ri=="berry":
 	print("Firmness:", firmness.replace("-", " ").capitalize())
 	print("Size:", str(size)+" millimeters ("+str(round(float(size)/25.4, 2)), "inches)")
 	exit()
-if ri=="moves":
-	if cmd_opt==True:
-		move=str(sys.argv[1]).lower()
-	else:
-		move=str(inp)
-	if move=="":
-		exit()
+if ri=="move":
+	move=inp
 	m=requests.get("https://pokeapi.co/api/v2/move/"+move+"/").json()
 	desc=str(m['effect_entries'][0]['effect']).replace("$effect_chance", str(m['effect_chance']))
 	category=str(m['damage_class']['name']).capitalize()
@@ -196,11 +188,7 @@ if ri=="moves":
 	else:
 		print("Priority:", priority)
 	exit()
-else:
-	if ri=="pokemon" and cmd_opt==False:
-		pokemon=str(inp)
-	elif cmd_opt==True:
-		pokemon=str(sys.argv[1]).lower()
+pokemon=inp
 r=requests.get("https://pokeapi.co/api/v2/pokemon/"+pokemon+"/").json()
 pid=r['id']
 spurl=str(r['species']['url'])
