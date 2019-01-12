@@ -92,7 +92,7 @@ if inp not in berries+items+pokemons+moves:
 			if ld < 5:
 				psbl[ii]=ld
 		else:
-			if ld < 5:
+			if ld < 8:
 				psbl[ii]=ld
 
 	if len(psbl)==0:
