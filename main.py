@@ -5,17 +5,9 @@ import urllib.request
 import random
 import queue
 import threading #fuck yea optimizing
-def get_one(q, v):
-	try:
-		r=requests.get("https://pokeapi.co/api/v2/"+v+"/")
-	except:
-		q.put("rip")
-		exit()
-	r=r.json()
-	q.put(r)
 def get_all(q, v):
 	try:
-		r=requests.get("https://pokeapi.co/api/v2/"+v+"/")
+		r=requests.get("https://pokeapi.co/api/v2/"+v+"/?limit=9999")
 	except:
 		q.put("rip")
 		exit()
