@@ -9,5 +9,3 @@ Currently supports:
 Features:
 - Autocorrect
 - Multithreading
-
-Report bugs to will@shamblin.org
