@@ -9,3 +9,8 @@ Currently supports:
 Features:
 - Autocorrect
 - Multithreading
+
+## Usage:
+```bash
+./pokepi --help
+```
